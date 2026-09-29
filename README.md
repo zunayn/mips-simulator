@@ -281,7 +281,7 @@ All members will participate in:
 
 # Internal Project Breakdown (Add your name to task of choice.)
 
-## Member 1 – Instruction Decoder
+## Timothy Sparks – Instruction Decoder
 
 Research and implement:
 
@@ -299,7 +299,7 @@ Possible files:
 
 ---
 
-## Member 2 – Register File and ALU
+## Tony McFarlan – Register File and ALU
 
 Implement:
 
@@ -317,7 +317,7 @@ Possible files:
 
 ---
 
-## Member 3 – Memory System
+## Haddon Stauffer – Memory System
 
 Implement:
 
@@ -334,7 +334,7 @@ Possible files:
 
 ---
 
-## Member 4 – Program Control
+## Zunain Nazir – Program Control
 
 Implement:
 
