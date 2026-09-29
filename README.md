@@ -358,11 +358,11 @@ Possible files:
 Before writing the final proposal, we need to decide:
 
 - Which programming language we will use.
-- Whether input will be assembly, binary machine code, or both.
+- Whether input will be assembly, binary machine code, or both. (Probably assembly)
 - Which MIPS instructions will be supported.
 - Whether we are simulating a single-cycle processor or something more advanced.
 - Whether the simulator will show control signals.
 - Whether the simulator will show the datapath.
 - Whether pipelining will be included.
 - How the processor state will be displayed.
-- How we will test correctness.
+- How we will test correctness. (Using another simulator like Mars to test if our simulator has the same results)
