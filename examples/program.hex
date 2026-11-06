@@ -1,0 +1,7 @@
+# One 32-bit machine instruction per line. PC starts at 0x00400000.
+# Initialize $t1=10, $t2=20 in the demo.
+0x012A4020  # add $t0, $t1, $t2 = 30
+0x01095822  # sub $t3, $t0, $t1 = 20
+0x010B6024  # and $t4, $t0, $t3 = 20
+0x000B6880  # sll $t5, $t3, 2 = 80
+0x00000000  # nop
