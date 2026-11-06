@@ -7,9 +7,7 @@
 - Zunain Nazir
 
 ## Short Project Summary
-Our project will involve developing a simulator for a MIPS processor. The simulator will accept MIPS instructions, interpret their behavior, and model important parts of processor execution such as registers, memory, instruction decoding, and execution.
-
-Depending on the final scope of the project, the simulator may also model concepts such as the datapath, control signals, instruction cycles, or pipelined execution.
+Our project will involve developing a single-cycle MIPS processor simulator in C++. The simulator will accept MIPS assembly instructions, decode and execute a selected subset of the instruction set, and model important processor components such as the program counter, register file, ALU, control logic, and memory. Additional features such as datapath visualization, control-signal display, or pipelining may be explored as stretch goals if time permits.
 
 ---
 
@@ -39,177 +37,99 @@ The project will also allow us to apply several concepts from CS3339 in a workin
 
 ## Main Goals
 
-The simulator should be able to:
+The simulator will be designed as a single-cycle MIPS processor simulator and will support a selected subset of common MIPS instructions.
 
-- Read or receive MIPS instructions.
-- Decode supported instructions.
-- Execute those instructions correctly.
-- Maintain the values of MIPS registers.
-- Simulate memory where necessary.
-- Display changes to the processor state.
-- Support multiple common MIPS instruction types.
+The core simulator will:
 
-Possible additional goals include:
+Accept MIPS assembly instructions as input.
 
-- Showing instruction fields such as opcode, `rs`, `rt`, `rd`, immediate, and function code.
-- Displaying control signals.
-- Showing the datapath used by an instruction.
-- Simulating instruction execution cycle-by-cycle.
-- Supporting pipelining.
-- Detecting pipeline hazards.
+Decode and execute supported instructions.
+
+Maintain the values of the 32 MIPS registers.
+
+Maintain and update the Program Counter (PC).
+
+Simulate data memory for load and store instructions.
+
+Model the ALU and basic processor control logic.
+
+Display changes to registers, memory, and processor state after instructions are executed.
+
+Support R-type, I-type, and J-type instructions.
+
+The initial instruction set will include:
+
+R-Type:
+
+`add`
+
+`sub`
+
+`and`
+
+`or`
+
+`slt`
+
+I-Type:
+
+`addi`
+
+`andi`
+
+`ori`
+
+`lw`
+
+`sw`
+
+`beq`
+
+`bne`
+
+J-Type:
+
+`j`
+
+`jal`
+
+If the core simulator is completed successfully, additional features may be implemented as stretch goals. These include displaying control signals, visualizing the MIPS datapath, supporting additional instructions, and potentially extending the simulator to model pipelined execution and pipeline hazards.
 
 ## Expected Results
 
-We expect the finished simulator to correctly execute a selected subset of the MIPS instruction set and produce the same register and memory results that would be expected from actual MIPS execution.
+We expect the finished simulator to correctly execute the selected subset of the MIPS instruction set and produce the same register, memory, and program-counter results expected from MIPS execution.
 
-The simulator should also provide enough information about each instruction to demonstrate how the processor handles different categories of instructions.
+Correctness will be tested by running the same MIPS programs in our simulator and in MARS and comparing the resulting processor state.
 
 ---
 
 # 1.2 Methodology
 
-## Step 1 – Determine Supported MIPS Instructions
+The project will begin by designing the major components of a single-cycle MIPS processor in software. These components will include the Program Counter, instruction decoder, register file, ALU, data memory, and control logic. The simulator will be written in C++, with different parts of the processor separated into software components so that they can be developed and tested independently.
 
-The team will first decide which instructions the simulator must support.
+The simulator will accept MIPS assembly instructions as input. The instruction parser and decoder will identify the instruction type, registers, immediate values, and other information required for execution. The appropriate processor components will then perform the operation and update the Program Counter, register file, or memory as necessary.
 
-Possible starting instructions:
+Development will initially focus on the selected R-type, I-type, and J-type instructions listed above. Once individual instructions work correctly, they will be combined into small MIPS programs containing arithmetic operations, memory operations, branches, jumps, and loops. This will allow the team to test interactions between the different simulator components.
 
-### R-Type
-- `add`
-- `sub`
-- `and`
-- `or`
-- `slt`
+To verify correctness, the team will create a collection of MIPS test programs and execute them using both our simulator and MARS. The resulting register values, memory values, and control flow will be compared. A test will be considered successful when our simulator produces the same final processor state as MARS for all instructions supported by the project.
 
-### I-Type
-- `addi`
-- `andi`
-- `ori`
-- `lw`
-- `sw`
-- `beq`
-- `bne`
+Development and Testing Tools
 
-### J-Type
-- `j`
-- `jal`
+Programming Language: C++
 
-Additional instructions can be added if time permits.
+Processor Model: Single-cycle MIPS processor
 
----
+Input Format: MIPS assembly instructions
 
-## Step 2 – Design Processor Components
+Reference Simulator: MARS
 
-The simulator will model the main processor components needed for instruction execution.
+Version Control: Git / GitHub
 
-Possible components include:
+Test Workloads: Custom MIPS programs containing arithmetic, logical, memory, branch, jump, and loop operations
 
-- Program Counter (PC)
-- Instruction Memory
-- Register File
-- ALU
-- Data Memory
-- Control Unit
-- Instruction Decoder
-- Immediate Generator / Sign Extension
-- Branch and Jump Logic
+Testing Method: Compare register, memory, and Program Counter results with MARS
 
-Each component can be represented using software classes, structures, or functions.
-
----
-
-## Step 3 – Instruction Parsing and Decoding
-
-The simulator will accept MIPS instructions in one of the following forms:
-
-- MIPS assembly instructions
-- 32-bit binary instructions
-- hexadecimal machine code
-
-The exact input format will be decided during implementation.
-
-The decoder will determine:
-
-- Opcode
-- Source registers
-- Destination register
-- Immediate value
-- Function code
-- Instruction type
-
----
-
-## Step 4 – Instruction Execution
-
-After decoding an instruction, the simulator will execute the required operation.
-
-For example:
-
-`add $t0, $t1, $t2`
-
-The simulator would:
-
-1. Read the contents of `$t1`.
-2. Read the contents of `$t2`.
-3. Send the values to the simulated ALU.
-4. Perform addition.
-5. Store the result in `$t0`.
-6. Update the program counter.
-
-For a memory instruction such as:
-
-`lw $t0, 4($t1)`
-
-the simulator would calculate the memory address and load the appropriate value into `$t0`.
-
----
-
-## Step 5 – Processor State
-
-The simulator will maintain the current processor state.
-
-This may include:
-
-- Program Counter
-- 32 MIPS registers
-- Memory values
-- Current instruction
-- ALU result
-- Control signals
-
-After each instruction, the simulator can display the updated state.
-
----
-
-## Step 6 – Testing
-
-The team will create small MIPS programs to test different instruction types.
-
-Tests may include:
-
-- Arithmetic operations
-- Logical operations
-- Register transfers
-- Memory loads and stores
-- Branches
-- Loops
-- Jump instructions
-
-The simulator output will be compared with expected results to verify correctness.
-
-If available, results may also be compared with an existing MIPS simulator such as MARS or QtSPIM.
-
----
-
-## Tools
-
-Possible development tools:
-
-- Programming language: [C++ / Python / Java]
-- Git / TXST GitLab
-- MARS or QtSPIM for reference testing
-- Command-line testing tools
-- IDE/editor used by team members
+Development Environment: Linux-based development environment with a C++ compiler and command-line tools
 
 ---
 
@@ -219,7 +139,7 @@ Possible development tools:
 
 The main deliverable will be a working MIPS processor simulator.
 
-The simulator source code will be stored in the team's TXST Git repository.
+The simulator source code will be stored in the team's GitHub repository.
 
 Repository:
 
@@ -253,13 +173,9 @@ The written report will explain:
 - Possible improvements.
 
 
-
-# <span style="color:red">** (END OF MATERIAL FOR PROPOSAL DOCUMENT - INFO FOLLOWING THIS IS TO BE USED INTERNALLY WITH TEAM MEMBERS )** </span>
-
-
 # 1.4 Team
 
-## Proposed Work Division (Draft) (Every person must put their role and repsonsibilities here.)
+## 
 
 | Team Member | Main Responsibility | Additional Responsibility |
 |---|---|---|
@@ -279,7 +195,7 @@ All members will participate in:
 
 ---
 
-# Internal Project Breakdown (Add your name to task of choice.)
+# Assigned respsonsibilites for team members
 
 ## Timothy Sparks – Instruction Decoder
 
@@ -353,16 +269,3 @@ Possible files:
 ---
 
 
-# Decisions the Team Needs to Make (Some questions from ChatGPT, refine and edit)
-
-Before writing the final proposal, we need to decide:
-
-- Which programming language we will use.
-- Whether input will be assembly, binary machine code, or both. (Probably assembly)
-- Which MIPS instructions will be supported.
-- Whether we are simulating a single-cycle processor or something more advanced.
-- Whether the simulator will show control signals.
-- Whether the simulator will show the datapath.
-- Whether pipelining will be included.
-- How the processor state will be displayed.
-- How we will test correctness. (Using another simulator like Mars to test if our simulator has the same results)
