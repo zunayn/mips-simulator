@@ -6,6 +6,9 @@ Headers declare planned interfaces and storage; source files reserve space for
 their owners. No parsing, decoding, execution, memory access, or state display
 is implemented. Interfaces can be refined together before implementation.
 
+See the [implementation spec and pseudocode](implementation-guide.md) for proposed
+shared behavior, component algorithms, integration steps, and acceptance checks.
+
 ## Layout
 
 ```text
