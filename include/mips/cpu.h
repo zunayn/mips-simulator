@@ -5,6 +5,7 @@
 #include "mips/instruction_memory.h"
 #include "mips/program_counter.h"
 #include "mips/registers.h"
+#include "mips/assembler.h"
 #include <cstdint>
 #include <string>
 #include <vector>
