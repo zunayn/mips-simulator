@@ -1,3 +1,4 @@
+# Won't work until I-type instructions are supported
 # Open this file in MARS and assemble/run it.
 # Expected: $t0=30, $t3=10, $t4=0, $t5=30, $t6=1.
 .text
