@@ -13,6 +13,7 @@ This is a **new local scaffold**, NOT source code currently present in the team'
 ```bash
 make
 ./demo
+./demo --asm examples/program.asm
 make test
 ```
 
@@ -45,4 +46,5 @@ git push -u origin feature/registers-alu
 - AND/OR use bitwise semantics; SLT compares signed values.
 - `executeRType` assumes the parser already decoded `rd`, `rs`, `rt` and operation.
 - Team integration remains: instruction parser/decoder, memory, PC/control flow, CPU execute loop, instruction file loading, and end-to-end tests.
-- `examples/alu_demo.asm` is a separate reference program for MARS; the scaffold cannot yet read `.asm` files.
+- `examples/program.asm` uses the simulator's initial R-type assembler. It supports the listed R-type ALU operations and `nop`, but not labels, directives, or I/J-type instructions.
+- `examples/alu_demo.asm` is a separate reference program for MARS; its `addi`, `li`, and `syscall` instructions are not supported by this simulator.

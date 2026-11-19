@@ -160,9 +160,9 @@ auto rest = cpu.run();     // execute remaining program
 
 ## 5. What we test, and what we do *not* claim
 
-Test suites: `test_core` = 30 checks; `test_integration` = 32; `test_program` = 34; `test_program_counter` = 12; `test_control` = 50; **158 total**. Coverage includes sequential dependencies, memory boundaries, alignment, hex loading, error state preservation, program completion, instruction limits, control signals, and independently tested branch/jump destinations.
+Test suites: `test_core` = 30 checks; `test_integration` = 32; `test_program` = 34; `test_program_counter` = 12; `test_control` = 50; `test_assembler` = 7; **165 total**. Coverage includes sequential dependencies, memory boundaries, alignment, hex loading, R-type assembly, error state preservation, program completion, instruction limits, control signals, and independently tested branch/jump destinations.
 
-**Not implemented in CPU execution:** I-type/J-type decoding, addi/andi/ori, lw/sw, data memory, beq/bne, j/jal, syscall/assembler, branch delay slots, HI/LO, multiply/divide, interrupts, or hardware propagation timing. There is **no pipeline**. The control unit can produce signals for the proposal's I/J subset and calculate branch/jump targets, but that does not mean CPU can execute those instructions yet. The next control-flow milestone is to connect I/J decoding, next-PC selection, and link writeback to CPU.
+**Not implemented in CPU execution:** I-type/J-type instructions such as addi/andi/ori, lw/sw, beq/bne, and j/jal; syscall; branch delay slots; HI/LO; multiply/divide; interrupts; or hardware propagation timing. The text assembler currently handles only the supported R-type operations and `nop`; labels and directives are not supported. There is **no pipeline**. The control unit can produce signals for the proposal's I/J subset and calculate branch/jump targets, but that does not mean CPU can execute those instructions yet. The next control-flow milestone is to connect I/J decoding, next-PC selection, and link writeback to CPU.
 
 ## 6. Why this is a single-cycle datapath, even though the code is sequential
 

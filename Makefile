@@ -27,17 +27,21 @@ test_program_counter: tests/test_program_counter.cpp src/program_counter.cpp inc
 test_control: tests/test_control.cpp $(CORE) $(HEADERS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) tests/test_control.cpp $(CORE) -o $@
 
+test_assembler: tests/test_assembler.cpp $(CORE) $(HEADERS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) tests/test_assembler.cpp $(CORE) -o $@
+
 run: demo
 	./demo
 
-test: test_core test_integration test_program test_program_counter test_control
+test: test_core test_integration test_program test_program_counter test_control test_assembler
 	./test_core
 	./test_integration
 	./test_program
 	./test_program_counter
 	./test_control
+	./test_assembler
 
 clean:
-	rm -f demo test_core test_integration test_program test_program_counter test_control
+	rm -f demo test_core test_integration test_program test_program_counter test_control test_assembler
 
 rebuild: clean all test

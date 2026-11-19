@@ -1,3 +1,4 @@
+#include "mips/assembler.h"
 #include "mips/cpu.h"
 #include <cstdint>
 #include <exception>
@@ -23,6 +24,8 @@ int main(int argc, char** argv) {
             });
         } else if (argc == 3 && std::string(argv[1]) == "--file") {
             cpu.loadProgramFile(argv[2]);
+        } else if (argc == 3 && std::string(argv[1]) == "--asm") {
+            cpu.loadProgram(mips::assembleFile(argv[2]));
         } else if (argc == 3 && std::string(argv[1]) == "--word") {
             const std::string input(argv[2]);
             std::size_t consumed = 0;
@@ -31,7 +34,8 @@ int main(int argc, char** argv) {
                 throw std::invalid_argument("Expected a 32-bit hexadecimal word");
             cpu.loadProgram({static_cast<uint32_t>(parsed)});
         } else {
-            throw std::invalid_argument("Usage: ./demo [--file examples/program.hex | --word 0x012A4020]");
+            throw std::invalid_argument(
+                "Usage: ./demo [--file examples/program.hex | --asm examples/program.asm | --word 0x012A4020]");
         }
         std::cout << "Single-cycle MIPS: sequential instruction-memory demo\n";
         const auto traces = cpu.run();
