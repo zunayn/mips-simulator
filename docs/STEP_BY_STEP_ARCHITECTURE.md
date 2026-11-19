@@ -2,8 +2,11 @@
 
 **Course:** CS 3339 Computer Architecture  
 **Project:** 32-bit MIPS single-cycle processor simulator (R-type subset)  
-**Milestone:** 4 — Instruction memory and sequential program execution  
-**Status:** CPU fetch, R-type decode, register read, ALU, register write-back, PC+4, and trace work; *this is not yet a full MIPS processor.*
+**Milestone:** Separate program counter and control unit
+
+**Status:** R-type CPU execution uses control signals. Branch/jump address selection is component-tested; CPU execution of I/J instructions remains to be integrated.
+
+For Zunain's next learning step, see the [control-unit walkthrough](control-unit-walkthrough.md).
 
 ## 0. First, what “single-cycle” means
 
@@ -17,18 +20,19 @@ This C++ code is a *functional* model, not a gate-level circuit or cycle-accurat
 flowchart TD
     PC[PC: current address] --> IM[InstructionMemory.fetch]
     IM --> D[decodeRType: opcode, rs, rt, rd, shamt, funct]
-    D --> CTRL[aluOpFromFunct: select ALUOp]
+    D --> CTRL[ControlUnit: select ALU operation and control signals]
     D --> RF[RegisterFile.read: rs, rt]
     RF --> A[aluEvaluate: operands + selected operation]
     CTRL --> A
     A --> WB[RegisterFile.write: rd, ALU result]
-    PC --> NEXT[Next PC = PC + 4]
+    CTRL --> WB
+    PC --> NEXT[ControlUnit.nextAddress: PC + 4 for R-type]
     WB --> TRACE[ExecutionTrace and console trace]
     NEXT --> TRACE
     NEXT --> PC
 ```
 
-*Note:* This depicts data/control dependencies. For the simulated single-cycle edge, register write-back and PC update logically happen together. A full datapath additionally needs muxes, a main control unit, data memory and branch/jump paths.
+*Note:* This depicts data/control dependencies. For the simulated single-cycle edge, register write-back and PC update logically happen together. A full datapath still needs immediate/memory routing, data memory, and CPU integration of branch/jump paths.
 
 ## 2. Step-by-step walkthrough: `add $t0, $t1, $t2`
 
@@ -47,7 +51,7 @@ Inputs: `$t1` = 10, `$t2` = 20; machine word `0x012A4020`; starting PC `0x004000
 - Code: `SingleCycleCPU::step()` in `src/cpu.cpp`.
 - PC = `0x00400000`; fetch returns `0x012A4020`.
 - The PC points to a byte address; each instruction is 4 bytes.
-- In this milestone, PC follows **PC + 4 only** (no branch or jump logic).
+- In CPU execution, PC follows **PC + 4 only**. The control unit separately supports and tests branch/jump address calculations.
 
 ### Step 3 — Decode: instruction bits → fields
 
@@ -67,8 +71,10 @@ Inputs: `$t1` = 10, `$t2` = 20; machine word `0x012A4020`; starting PC `0x004000
 
 ### Step 5 — Control + Execute: function code → ALU
 
-- Code: `aluOpFromFunct(...)`, `aluEvaluate(...)` in `src/alu.cpp`.
-- `funct=0x20` chooses `ALUOp::ADD`.
+- Code: `ControlUnit::decode(...)` in `src/control.cpp`, using `aluOpFromFunct(...)`; execution uses `aluEvaluate(...)` in `src/alu.cpp`.
+- CPU adapts the existing decoded R fields to `mips::RTypeInstruction`, the interface from `main`.
+- `funct=0x20` chooses `ALUOp::ADD`, enables register writeback, and selects `rd` as the destination. Memory and branch/jump signals remain false.
+- The `CONTROL` trace row displays the routing decisions. Control's register-write enable remains true for an R-type operation targeting `$zero`; the register file still discards that write.
 - Execute signed 32-bit addition: 10 + 20 = 30; Zero flag = false.
 - For signed ADD/SUB, overflow raises an exception *before* changing PC or registers.
 - Other operations include modular ADDU/SUBU, AND/OR/XOR/NOR, signed/unsigned SLT, and SLL/SRL/SRA.
@@ -87,7 +93,7 @@ Inputs: `$t1` = 10, `$t2` = 20; machine word `0x012A4020`; starting PC `0x004000
 - `mips::ProgramCounter` owns the address in a private member. Its header and four-method interface match the structure on `main`.
 - CPU owns a private `programCounter_` component. Read its address through `cpu.pc()`; the previous public `cpu.pc` integer has been removed.
 - PC changes from `0x00400000` to `0x00400004` (one instruction completed).
-- CPU advances a temporary copy before execution to check for address overflow. It installs that copy only after decoding and ALU work succeed, so a failed instruction preserves PC and registers.
+- `ControlUnit::nextAddress` calculates and validates the next address using a local ProgramCounter. CPU installs the result only after decoding and ALU work succeed, so a failed instruction preserves PC and registers.
 - `ExecutionTrace` includes PC before/after, decoded fields, operand values, ALU operation/result, Zero flag and register-write indicator.
 - The printed trace names conceptual activities of the *same single cycle*.
 
@@ -98,10 +104,10 @@ program starts or which addresses contain instructions. CPU sets the initial
 address to `InstructionMemory::kTextBase` (`0x00400000`) and selects the supplied
 base when loading a program. Instruction memory validates fetch bounds.
 
-This keeps address storage separate from execution policy. Later, branch/jump
-control can calculate a target and CPU can pass it to `set()` without moving the
-address field back into CPU. The program counter itself does not compare registers
-or decode instructions. Zunain owns this component and its integration.
+This keeps address storage separate from execution policy. Branch/jump control
+already calculates targets in component tests; CPU integration of those paths
+is the next step. The program counter itself does not compare registers or decode
+instructions. Zunain owns these components and their integration.
 
 ### Step 8 — Repeat until program end
 
@@ -129,6 +135,8 @@ After five instructions, PC = `0x00400014`, and the emulator stops because it ha
 |---|---|---|---|---|
 | Instruction memory | `include/mips/instruction_memory.h` / `src/instruction_memory.cpp` | PC byte address | 32-bit instruction | Integration scaffold; agree with team memory owner |
 | Program counter | `include/mips/program_counter.h` / `src/program_counter.cpp` | Reset, aligned address, or advance | Current instruction byte address | Zunain Nazir |
+| Control unit | `include/mips/control.h` / `src/control.cpp` | Typed instruction, current PC, register values | Control signals and next address | Zunain Nazir |
+| Instruction formats | `include/mips/instruction.h` / `src/instruction.cpp` | Fields supplied by decoder or test | R/I/J format and typed fields | Shared interface from Timothy's main-branch scaffold |
 | Instruction decoder | `include/mips/decoder.h` / `src/decoder.cpp` | 32-bit word | `DecodedRType` | Timothy-owned implementation can replace reference decoder |
 | Register file | `include/mips/registers.h` / `src/registers.cpp` | rs/rt index; rd/value on write | 32-bit operand values | Your module |
 | ALU control | `aluOpFromFunct` in `src/alu.cpp` | `funct` | `ALUOp` | Agree on control interface with Timothy |
@@ -152,9 +160,9 @@ auto rest = cpu.run();     // execute remaining program
 
 ## 5. What we test, and what we do *not* claim
 
-Test suites: `test_core` = 30 checks; `test_integration` = 29; `test_program` = 30; **89 total**. The new suite tests sequential dependencies, memory boundaries, alignment, hex loading, error state preservation, program completion, and instruction limits.
+Test suites: `test_core` = 30 checks; `test_integration` = 32; `test_program` = 34; `test_program_counter` = 12; `test_control` = 50; **158 total**. Coverage includes sequential dependencies, memory boundaries, alignment, hex loading, error state preservation, program completion, instruction limits, control signals, and independently tested branch/jump destinations.
 
-**Not implemented:** I-type/J-type decoding, addi/andi/ori, lw/sw, data memory, beq/bne, branch target selection, jump, complete main control, syscall/assembler, branch delay slots, HI/LO, multiply/divide, interrupts, or hardware propagation timing. There is **no pipeline**. To build a complete single-cycle processor, integrate main control, muxes (ALUSrc/RegDst/MemToReg/PCSrc), data memory and PC target logic.
+**Not implemented in CPU execution:** I-type/J-type decoding, addi/andi/ori, lw/sw, data memory, beq/bne, j/jal, syscall/assembler, branch delay slots, HI/LO, multiply/divide, interrupts, or hardware propagation timing. There is **no pipeline**. The control unit can produce signals for the proposal's I/J subset and calculate branch/jump targets, but that does not mean CPU can execute those instructions yet. The next control-flow milestone is to connect I/J decoding, next-PC selection, and link writeback to CPU.
 
 ## 6. Why this is a single-cycle datapath, even though the code is sequential
 

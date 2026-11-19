@@ -3,6 +3,8 @@ CPPFLAGS += -Iinclude
 CXXFLAGS ?= -std=c++17 -Wall -Wextra -Wpedantic -O2
 CORE := src/registers.cpp src/alu.cpp src/decoder.cpp src/cpu.cpp src/instruction_memory.cpp src/program_counter.cpp
 HEADERS := include/mips/registers.h include/mips/alu.h include/mips/decoder.h include/mips/cpu.h include/mips/instruction_memory.h include/mips/program_counter.h
+CORE += src/instruction.cpp src/control.cpp
+HEADERS += include/mips/instruction.h include/mips/control.h
 
 .PHONY: all run test clean rebuild
 all: demo
@@ -22,16 +24,20 @@ test_program: tests/test_program.cpp $(CORE) $(HEADERS)
 test_program_counter: tests/test_program_counter.cpp src/program_counter.cpp include/mips/program_counter.h
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) tests/test_program_counter.cpp src/program_counter.cpp -o $@
 
+test_control: tests/test_control.cpp $(CORE) $(HEADERS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) tests/test_control.cpp $(CORE) -o $@
+
 run: demo
 	./demo
 
-test: test_core test_integration test_program test_program_counter
+test: test_core test_integration test_program test_program_counter test_control
 	./test_core
 	./test_integration
 	./test_program
 	./test_program_counter
+	./test_control
 
 clean:
-	rm -f demo test_core test_integration test_program test_program_counter
+	rm -f demo test_core test_integration test_program test_program_counter test_control
 
 rebuild: clean all test

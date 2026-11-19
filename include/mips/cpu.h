@@ -1,5 +1,6 @@
 #pragma once
 #include "mips/alu.h"
+#include "mips/control.h"
 #include "mips/decoder.h"
 #include "mips/instruction_memory.h"
 #include "mips/program_counter.h"
@@ -16,6 +17,7 @@ struct ExecutionTrace {
     uint32_t operandA, operandB, result;
     bool zero, regWrite;
     std::string assembly;
+    mips::ControlSignals control;
 };
 
 // A single-cycle R-type execution slice, not a pipelined or complete CPU.
@@ -38,6 +40,7 @@ public:
 private:
     // Assigned to: Zunain Nazir.
     mips::ProgramCounter programCounter_;
+    mips::ControlUnit control_;
 };
 
 const char* aluOpName(ALUOp op);

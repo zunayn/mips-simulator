@@ -26,6 +26,12 @@ int main() {
     check(cpu.pc() == 0x00400004u && t.pcBefore == 0x00400000u, "PC + 4");
     check(t.assembly == "add $8, $9, $10", "disassembly");
     check(formatTrace(t).find("DECODE") != std::string::npos, "trace");
+    check(t.control.registerWrite && t.control.destinationIsRd
+          && t.control.aluOperation == ALUOp::ADD && !t.control.memoryRead
+          && !t.control.memoryWrite && !t.control.branch && !t.control.jump,
+          "CPU executes ADD using control signals");
+    check(formatTrace(t).find("CONTROL     RegWrite=1 RegDst=1") != std::string::npos,
+          "trace explains control routing");
     struct Case { unsigned funct; uint32_t a,b,expected; } cases[] = {
       {0x21,0xffffffffu,1,0},{0x22,30,20,10},{0x23,0,1,0xffffffffu},
       {0x24,0xf0,0x0f,0},{0x25,0xf0,0x0f,0xff},
@@ -48,6 +54,8 @@ int main() {
     const uint32_t beforeZero = cpu.registers.read(0);
     const auto nop=cpu.stepRType(0);
     check(!nop.regWrite && cpu.registers.read(0)==beforeZero && nop.assembly=="nop", "nop");
+    check(nop.control.registerWrite && !nop.regWrite,
+          "zero-register protection is separate from the control write-enable");
     reject([&]{decodeRType(0x21280001u);}, "reject I-type");
     reject([&]{decodeRType(encodeRType(9,10,8,1,0x20));}, "non-shift shamt");
     reject([&]{decodeRType(encodeRType(9,10,8,4,0x00));}, "shift rs");

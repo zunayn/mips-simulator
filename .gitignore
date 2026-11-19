@@ -3,4 +3,5 @@ test_core
 test_integration
 test_program
 test_program_counter
+test_control
 .DS_Store

@@ -44,20 +44,28 @@ std::string formatRType(const DecodedRType& d, ALUOp op) {
 }
 
 ExecutionTrace SingleCycleCPU::stepRType(uint32_t word) {
-    // Validate advancement on a copy before committing any processor state.
-    auto nextPC = programCounter_;
-    nextPC.advance();
     const DecodedRType d = decodeRType(word);
-    const ALUOp op = aluOpFromFunct(d.funct);
+    // Bridge the feature branch's decoder to main's shared instruction interface.
+    mips::RTypeInstruction instruction;
+    instruction.opcode = static_cast<std::uint8_t>(d.opcode);
+    instruction.rs = static_cast<std::uint8_t>(d.rs);
+    instruction.rt = static_cast<std::uint8_t>(d.rt);
+    instruction.rd = static_cast<std::uint8_t>(d.rd);
+    instruction.shiftAmount = static_cast<std::uint8_t>(d.shamt);
+    instruction.functionCode = static_cast<std::uint8_t>(d.funct);
+    const auto signals = control_.decode(instruction);
+    const ALUOp op = signals.aluOperation;
+    const uint32_t oldPC = programCounter_.value();
+    const uint32_t nextPC = control_.nextAddress(oldPC, instruction, registers);
     const uint32_t lhs = registers.read(d.rs);
     const uint32_t rhs = registers.read(d.rt);
     // No state changes until all validation and ALU work succeed.
     const ALUResult value = aluEvaluate(op, lhs, rhs, d.shamt);
-    const uint32_t oldPC = programCounter_.value();
-    registers.write(d.rd, value.value);
-    programCounter_ = nextPC;
+    const unsigned destination = signals.destinationIsRd ? d.rd : d.rt;
+    if (signals.registerWrite) registers.write(destination, value.value);
+    programCounter_.set(nextPC);
     return {oldPC, programCounter_.value(), d, op, lhs, rhs, value.value,
-            value.zero, d.rd != 0, formatRType(d, op)};
+            value.zero, signals.registerWrite && destination != 0, formatRType(d, op), signals};
 }
 
 std::string formatTrace(const ExecutionTrace& t) {
@@ -68,6 +76,11 @@ std::string formatTrace(const ExecutionTrace& t) {
       << " rs=" << t.decoded.rs << " rt=" << t.decoded.rt
       << " rd=" << t.decoded.rd << " shamt=" << t.decoded.shamt
       << " funct=0x" << std::hex << t.decoded.funct << std::dec << '\n'
+      << "CONTROL     RegWrite=" << t.control.registerWrite
+      << " RegDst=" << t.control.destinationIsRd
+      << " ALUSrc=" << t.control.aluSourceImmediate
+      << " MemRead=" << t.control.memoryRead << " MemWrite=" << t.control.memoryWrite
+      << " Branch=" << t.control.branch << " Jump=" << t.control.jump << '\n'
       << "READ        rs=" << t.operandA << " rt=" << t.operandB << '\n'
       << "EXECUTE     ALU=" << aluOpName(t.operation) << " result=" << t.result
       << " zero=" << t.zero << '\n'
