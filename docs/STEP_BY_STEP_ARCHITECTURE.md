@@ -36,7 +36,7 @@ Inputs: `$t1` = 10, `$t2` = 20; machine word `0x012A4020`; starting PC `0x004000
 
 ### Step 1 — Program load: instruction memory
 
-- Code: `include/instruction_memory.hpp`, `src/instruction_memory.cpp`.
+- Code: `include/mips/instruction_memory.h`, `src/instruction_memory.cpp`.
 - Load `0x012A4020` at text address `0x00400000` (next word at `0x00400004`).
 - `loadProgram(...)` copies words into a vector; `loadProgramFile(...)` reads one hex word per line, optionally with a `#` comment.
 - Interface: `InstructionMemory::fetch(pc) -> uint32_t`.
@@ -51,7 +51,7 @@ Inputs: `$t1` = 10, `$t2` = 20; machine word `0x012A4020`; starting PC `0x004000
 
 ### Step 3 — Decode: instruction bits → fields
 
-- Code: `decodeRType(...)` in `src/decoder.cpp`; contract in `include/decoder.hpp`.
+- Code: `decodeRType(...)` in `src/decoder.cpp`; contract in `include/mips/decoder.h`.
 - R-type bit layout: `[31:26] opcode | [25:21] rs | [20:16] rt | [15:11] rd | [10:6] shamt | [5:0] funct`.
 - For `0x012A4020`: `opcode=0`, `rs=9`, `rt=10`, `rd=8`, `shamt=0`, `funct=0x20`.
 - `opcode == 0` indicates the R-type format; `funct=0x20` selects ADD.
@@ -83,15 +83,30 @@ Inputs: `$t1` = 10, `$t2` = 20; machine word `0x012A4020`; starting PC `0x004000
 
 ### Step 7 — Next PC and trace
 
-- Code: `src/cpu.cpp`, `formatTrace(...)`.
+- Code: `src/program_counter.cpp` and `src/cpu.cpp`, including `formatTrace(...)`.
+- `mips::ProgramCounter` owns the address in a private member. Its header and four-method interface match the structure on `main`.
+- CPU owns a private `programCounter_` component. Read its address through `cpu.pc()`; the previous public `cpu.pc` integer has been removed.
 - PC changes from `0x00400000` to `0x00400004` (one instruction completed).
+- CPU advances a temporary copy before execution to check for address overflow. It installs that copy only after decoding and ALU work succeed, so a failed instruction preserves PC and registers.
 - `ExecutionTrace` includes PC before/after, decoded fields, operand values, ALU operation/result, Zero flag and register-write indicator.
 - The printed trace names conceptual activities of the *same single cycle*.
+
+The component's `reset()` sets its address to zero; `value()` reads it;
+`set(address)` accepts a four-byte-aligned address; and `advance()` adds four,
+rejecting overflow rather than wrapping. The component does not decide where a
+program starts or which addresses contain instructions. CPU sets the initial
+address to `InstructionMemory::kTextBase` (`0x00400000`) and selects the supplied
+base when loading a program. Instruction memory validates fetch bounds.
+
+This keeps address storage separate from execution policy. Later, branch/jump
+control can calculate a target and CPU can pass it to `set()` without moving the
+address field back into CPU. The program counter itself does not compare registers
+or decode instructions. Zunain owns this component and its integration.
 
 ### Step 8 — Repeat until program end
 
 - Code: `SingleCycleCPU::run(maxInstructions)`.
-- While `pc != instructions.endAddress()`, `step()` fetches and executes the next word.
+- While `cpu.pc() != cpu.instructions.endAddress()`, `step()` fetches and executes the next word.
 - At the exact address immediately after the last word, `halted()` returns true and `run()` stops. **This is a simulator stopping rule, not a MIPS halt instruction.**
 - If an instruction is unsupported, fetch is invalid, or signed ADD/SUB overflows, execution throws; the failing instruction leaves PC and registers unchanged. Prior completed instructions are not rolled back.
 - A maximum-instruction guard prevents unbounded runs. With sequential-only execution, each successful instruction uses one simulated clock cycle.
@@ -112,12 +127,13 @@ After five instructions, PC = `0x00400014`, and the emulator stops because it ha
 
 | Component | Header / implementation | Input | Output | Owner / integration note |
 |---|---|---|---|---|
-| Instruction memory | `include/instruction_memory.hpp` / `src/instruction_memory.cpp` | PC byte address | 32-bit instruction | Integration scaffold; agree with team memory owner |
-| Instruction decoder | `include/decoder.hpp` / `src/decoder.cpp` | 32-bit word | `DecodedRType` | Timothy-owned implementation can replace reference decoder |
-| Register file | `include/registers.hpp` / `src/registers.cpp` | rs/rt index; rd/value on write | 32-bit operand values | Your module |
+| Instruction memory | `include/mips/instruction_memory.h` / `src/instruction_memory.cpp` | PC byte address | 32-bit instruction | Integration scaffold; agree with team memory owner |
+| Program counter | `include/mips/program_counter.h` / `src/program_counter.cpp` | Reset, aligned address, or advance | Current instruction byte address | Zunain Nazir |
+| Instruction decoder | `include/mips/decoder.h` / `src/decoder.cpp` | 32-bit word | `DecodedRType` | Timothy-owned implementation can replace reference decoder |
+| Register file | `include/mips/registers.h` / `src/registers.cpp` | rs/rt index; rd/value on write | 32-bit operand values | Your module |
 | ALU control | `aluOpFromFunct` in `src/alu.cpp` | `funct` | `ALUOp` | Agree on control interface with Timothy |
-| ALU | `include/alu.hpp` / `src/alu.cpp` | operand A, B, ALUOp, shamt | value + Zero | Your module |
-| CPU integration | `include/cpu.hpp` / `src/cpu.cpp` | memory and PC | trace; registers+PC updated | Shared glue code |
+| ALU | `include/mips/alu.h` / `src/alu.cpp` | operand A, B, ALUOp, shamt | value + Zero | Your module |
+| CPU integration | `include/mips/cpu.h` / `src/cpu.cpp` | memory and PC | trace; registers+PC updated | Shared glue code |
 | CLI | `src/main.cpp` | default/hex file/single word | console trace | Demo harness |
 | Tests | `tests/*.cpp` | known instructions, errors | pass/fail | Regression verification |
 

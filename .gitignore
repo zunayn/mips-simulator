@@ -1,4 +1,6 @@
 demo
 test_core
 test_integration
+test_program
+test_program_counter
 .DS_Store

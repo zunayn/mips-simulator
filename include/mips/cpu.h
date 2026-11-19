@@ -1,8 +1,9 @@
 #pragma once
-#include "alu.hpp"
-#include "decoder.hpp"
-#include "instruction_memory.hpp"
-#include "registers.hpp"
+#include "mips/alu.h"
+#include "mips/decoder.h"
+#include "mips/instruction_memory.h"
+#include "mips/program_counter.h"
+#include "mips/registers.h"
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -18,12 +19,13 @@ struct ExecutionTrace {
 };
 
 // A single-cycle R-type execution slice, not a pipelined or complete CPU.
-// A caller supplies one instruction word (instruction memory is not yet modeled).
+// Owns instruction memory and a separate program-counter component.
 class SingleCycleCPU {
 public:
+    SingleCycleCPU();
     RegisterFile registers;
     InstructionMemory instructions;
-    uint32_t pc = InstructionMemory::kTextBase;
+    uint32_t pc() const;
     void loadProgram(const std::vector<uint32_t>& words,
                      uint32_t base = InstructionMemory::kTextBase);
     void loadProgramFile(const std::string& path,
@@ -32,6 +34,10 @@ public:
     ExecutionTrace step(); // fetch from instruction memory, then execute
     std::vector<ExecutionTrace> run(std::size_t maxInstructions = 1000);
     ExecutionTrace stepRType(uint32_t instruction); // legacy direct-word API
+
+private:
+    // Assigned to: Zunain Nazir.
+    mips::ProgramCounter programCounter_;
 };
 
 const char* aluOpName(ALUOp op);

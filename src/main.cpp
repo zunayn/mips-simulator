@@ -1,4 +1,4 @@
-#include "cpu.hpp"
+#include "mips/cpu.h"
 #include <cstdint>
 #include <exception>
 #include <iomanip>

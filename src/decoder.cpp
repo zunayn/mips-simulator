@@ -1,5 +1,5 @@
-#include "decoder.hpp"
-#include "alu.hpp"
+#include "mips/decoder.h"
+#include "mips/alu.h"
 #include <stdexcept>
 
 DecodedRType decodeRType(uint32_t word) {

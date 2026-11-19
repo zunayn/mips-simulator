@@ -1,5 +1,5 @@
-#include "alu.hpp"
-#include "registers.hpp"
+#include "mips/alu.h"
+#include "mips/registers.h"
 #include <cassert>
 #include <cstdint>
 #include <iostream>

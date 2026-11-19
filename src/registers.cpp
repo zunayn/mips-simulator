@@ -1,4 +1,4 @@
-#include "registers.hpp"
+#include "mips/registers.h"
 #include <iomanip>
 #include <ostream>
 #include <stdexcept>

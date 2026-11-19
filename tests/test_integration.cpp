@@ -1,4 +1,4 @@
-#include "cpu.hpp"
+#include "mips/cpu.h"
 #include <cstdint>
 #include <functional>
 #include <iostream>
@@ -23,7 +23,7 @@ int main() {
     check(t.decoded.rs == 9 && t.decoded.rt == 10 && t.decoded.rd == 8, "decode registers");
     check(t.operation == ALUOp::ADD && t.result == 30, "ALU ADD");
     check(cpu.registers.read(8) == 30, "register write-back");
-    check(cpu.pc == 0x00400004u && t.pcBefore == 0x00400000u, "PC + 4");
+    check(cpu.pc() == 0x00400004u && t.pcBefore == 0x00400000u, "PC + 4");
     check(t.assembly == "add $8, $9, $10", "disassembly");
     check(formatTrace(t).find("DECODE") != std::string::npos, "trace");
     struct Case { unsigned funct; uint32_t a,b,expected; } cases[] = {
@@ -54,11 +54,11 @@ int main() {
     reject([&]{decodeRType(encodeRType(9,10,8,0,0x3f));}, "unknown funct");
     reject([&]{encodeRType(32,0,0,0,0x20);}, "out-of-range encoder");
     cpu.registers.write(8,77); cpu.registers.write(9,0x7fffffffu); cpu.registers.write(10,1);
-    const uint32_t pcBefore = cpu.pc;
+    const uint32_t pcBefore = cpu.pc();
     reject([&]{cpu.stepRType(0x012A4020u);}, "overflow trap");
-    check(cpu.pc==pcBefore && cpu.registers.read(8)==77, "overflow atomicity");
+    check(cpu.pc()==pcBefore && cpu.registers.read(8)==77, "overflow atomicity");
     reject([&]{cpu.stepRType(0xffffffffu);}, "invalid instruction");
-    check(cpu.pc==pcBefore && cpu.registers.read(8)==77, "invalid instruction atomicity");
+    check(cpu.pc()==pcBefore && cpu.registers.read(8)==77, "invalid instruction atomicity");
     cpu.registers.write(9,0);
     const auto zero=cpu.stepRType(encodeRType(9,9,8,0,0x26));
     check(zero.zero && zero.result==0, "zero flag");

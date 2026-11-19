@@ -1,4 +1,4 @@
-#include "instruction_memory.hpp"
+#include "mips/instruction_memory.h"
 #include <fstream>
 #include <limits>
 #include <sstream>

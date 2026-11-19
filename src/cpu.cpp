@@ -1,7 +1,16 @@
-#include "cpu.hpp"
+#include "mips/cpu.h"
 #include <iomanip>
 #include <sstream>
 #include <stdexcept>
+
+// Assigned to: Zunain Nazir (program-counter integration).
+SingleCycleCPU::SingleCycleCPU() {
+    programCounter_.set(InstructionMemory::kTextBase);
+}
+
+uint32_t SingleCycleCPU::pc() const {
+    return programCounter_.value();
+}
 
 const char* aluOpName(ALUOp op) {
     switch (op) {
@@ -35,17 +44,19 @@ std::string formatRType(const DecodedRType& d, ALUOp op) {
 }
 
 ExecutionTrace SingleCycleCPU::stepRType(uint32_t word) {
-    if (pc > 0xfffffffbu) throw std::overflow_error("PC + 4 overflow");
+    // Validate advancement on a copy before committing any processor state.
+    auto nextPC = programCounter_;
+    nextPC.advance();
     const DecodedRType d = decodeRType(word);
     const ALUOp op = aluOpFromFunct(d.funct);
     const uint32_t lhs = registers.read(d.rs);
     const uint32_t rhs = registers.read(d.rt);
     // No state changes until all validation and ALU work succeed.
     const ALUResult value = aluEvaluate(op, lhs, rhs, d.shamt);
-    const uint32_t oldPC = pc;
+    const uint32_t oldPC = programCounter_.value();
     registers.write(d.rd, value.value);
-    pc += 4;
-    return {oldPC, pc, d, op, lhs, rhs, value.value,
+    programCounter_ = nextPC;
+    return {oldPC, programCounter_.value(), d, op, lhs, rhs, value.value,
             value.zero, d.rd != 0, formatRType(d, op)};
 }
 
@@ -68,21 +79,21 @@ std::string formatTrace(const ExecutionTrace& t) {
 
 void SingleCycleCPU::loadProgram(const std::vector<uint32_t>& words, uint32_t base) {
     instructions.load(words, base);
-    pc = base;
+    programCounter_.set(base);
 }
 
 void SingleCycleCPU::loadProgramFile(const std::string& path, uint32_t base) {
     instructions.loadHexFile(path, base);
-    pc = base;
+    programCounter_.set(base);
 }
 
 bool SingleCycleCPU::halted() const {
-    return pc == instructions.endAddress();
+    return programCounter_.value() == instructions.endAddress();
 }
 
 ExecutionTrace SingleCycleCPU::step() {
     // Fetch fails without modifying registers or the PC.
-    return stepRType(instructions.fetch(pc));
+    return stepRType(instructions.fetch(programCounter_.value()));
 }
 
 std::vector<ExecutionTrace> SingleCycleCPU::run(std::size_t maxInstructions) {

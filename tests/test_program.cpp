@@ -1,4 +1,4 @@
-#include "cpu.hpp"
+#include "mips/cpu.h"
 #include <cstdio>
 #include <fstream>
 #include <functional>
@@ -37,7 +37,7 @@ int main() {
     ok(cpu.registers.read(8)==30, "first ALU write-back");
     const auto remaining=cpu.run();
     ok(remaining.size()==4 && cpu.halted(), "run remaining and halt");
-    ok(cpu.pc==0x00400014u, "final PC");
+    ok(cpu.pc()==0x00400014u, "final PC");
     ok(cpu.registers.read(11)==20, "dependent SUB");
     ok(cpu.registers.read(12)==20, "dependent AND");
     ok(cpu.registers.read(13)==80, "dependent SLL");
@@ -45,19 +45,19 @@ int main() {
     ok(cpu.registers.read(0)==0, "zero preserved");
     rejects([&]{ cpu.step(); }, "cannot fetch after program end");
     cpu.loadProgram({0xffffffffu});
-    auto pc=cpu.pc; auto t0=cpu.registers.read(8);
+    auto pc=cpu.pc(); auto t0=cpu.registers.read(8);
     rejects([&]{ cpu.step(); }, "invalid encoding");
-    ok(cpu.pc==pc && cpu.registers.read(8)==t0, "invalid instruction leaves state intact");
+    ok(cpu.pc()==pc && cpu.registers.read(8)==t0, "invalid instruction leaves state intact");
     cpu.registers.write(9,0x7fffffffu); cpu.registers.write(10,1);
-    cpu.loadProgram({program[0]}); pc=cpu.pc; t0=cpu.registers.read(8);
+    cpu.loadProgram({program[0]}); pc=cpu.pc(); t0=cpu.registers.read(8);
     rejects([&]{ cpu.step(); }, "signed overflow");
-    ok(cpu.pc==pc && cpu.registers.read(8)==t0, "overflow leaves state intact");
+    ok(cpu.pc()==pc && cpu.registers.read(8)==t0, "overflow leaves state intact");
     rejects([&]{ cpu.loadProgram(program,0x00400002u); }, "base alignment");
     rejects([&]{ cpu.loadProgram(program,0xfffffff0u); }, "base space overflow");
     const char* temp="mips_temp_program_test.hex";
     { std::ofstream out(temp); out << "# comment\n\n" << "0x012A4020 # add\n" << "00000000\n"; }
     cpu.loadProgramFile(temp);
-    ok(cpu.instructions.size()==2 && cpu.instructions.fetch(cpu.pc)==program[0], "hex file load");
+    ok(cpu.instructions.size()==2 && cpu.instructions.fetch(cpu.pc())==program[0], "hex file load");
     { std::ofstream out(temp); out << "xyz\n"; }
     rejects([&]{ cpu.loadProgramFile(temp); }, "invalid hex file");
     ok(cpu.instructions.size()==2, "invalid file does not replace program");
@@ -69,6 +69,18 @@ int main() {
     cpu.registers.write(9,10); cpu.registers.write(10,20);
     cpu.loadProgram(program);
     rejects([&]{ cpu.run(2); }, "instruction limit");
-    ok(cpu.pc==0x00400008u, "instruction limit stops after exactly two");
+    ok(cpu.pc()==0x00400008u, "instruction limit stops after exactly two");
+
+    cpu.loadProgram({program[0]}, 0x1000u);
+    ok(cpu.pc()==0x1000u, "load selects custom program-counter base");
+    const auto relocated = cpu.step();
+    ok(relocated.pcBefore==0x1000u && relocated.pcAfter==0x1004u
+       && cpu.pc()==0x1004u && cpu.halted(), "custom-base execution advances and halts");
+
+    cpu.loadProgram({}, 0xfffffffcu);
+    cpu.registers.write(8, 77);
+    rejects([&]{ cpu.stepRType(program[0]); }, "PC advancement overflow");
+    ok(cpu.pc()==0xfffffffcu && cpu.registers.read(8)==77,
+       "PC overflow leaves registers and PC intact");
     std::cout << "All " << n << " instruction-memory/program checks passed.\n";
 }
